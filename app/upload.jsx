@@ -2,18 +2,28 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, Image, TouchableOpacity, Text, ActivityIndicator, Animated } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { ScrollView } from 'react-native-gesture-handler';
+import * as Font from 'expo-font';
 
 export default function App() {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedImage, setCapturedImage] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [plantData, setPlantData] = useState(null);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const cameraRef = useRef(null);
   
   // Animation values
   const flipAnimation = useRef(new Animated.Value(0)).current;
   const captureButtonScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    loadFonts();
+  }, []);
 
   useEffect(() => {
     if (capturedImage) {
@@ -30,6 +40,33 @@ export default function App() {
       });
     }
   }, [capturedImage]);
+
+  useEffect(() => {
+    if (capturedImage && plantData) {
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [capturedImage, plantData]);
+
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      'Pacifico': require('../assets/fonts/Head.ttf'),
+      'Roboto': require('../assets/fonts/Detail.ttf'),
+    });
+    setFontsLoaded(true);
+  };
 
   if (!permission) {
     return <View />;
@@ -91,9 +128,9 @@ export default function App() {
         method: 'POST',
         body: formData,
       });
-      const result = await response.text();
+      const result = await response.json();
       console.log(result);
-      // Handle the response from the backend here
+      setPlantData(result);
       setIsAnalyzing(false);
     } catch (error) {
       console.error('Error sending photo to backend:', error);
@@ -101,16 +138,57 @@ export default function App() {
     }
   }
 
-  if (capturedImage) {
+  if (capturedImage && !plantData) {
     return (
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: capturedImage }} style={styles.preview} />
-          <Text style={styles.analyzingText}>Analyzing Nick's photo</Text>
+          <Text style={styles.analyzingText}>Analyzing Your photo</Text>
         </View>
         {isAnalyzing && (
           <ActivityIndicator size="large" color="#6C63FF" style={styles.loader} />
         )}
+      </Animated.View>
+    );
+  }
+
+  if (capturedImage && plantData) {
+    return (
+      <Animated.View 
+        style={[
+          styles.infoContainer, 
+          { 
+            opacity: fadeAnim,
+            transform: [
+              { translateY: slideAnim },
+              { scale: scaleAnim }
+            ] 
+          }
+        ]}
+      >
+        <ScrollView>
+          <Image source={{ uri: capturedImage }} style={styles.previewImage} />
+          <Animated.Text 
+            style={[
+              styles.plantName,
+              {
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            {plantData.name}
+          </Animated.Text>
+          <Animated.Text 
+            style={[
+              styles.plantDetails,
+              {
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            {plantData.details}
+          </Animated.Text>
+        </ScrollView>
       </Animated.View>
     );
   }
@@ -162,6 +240,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'white',
   },
+  infoContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    padding: 20,
+    backgroundColor: 'white',
+  },
   message: {
     textAlign: 'center',
     paddingBottom: 10,
@@ -207,6 +291,12 @@ const styles = StyleSheet.create({
     height: 400,
     borderRadius: 20,
   },
+  previewImage: {
+    width: '100%',
+    height: 400,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
   analyzingText: {
     marginTop: 10,
     fontSize: 16,
@@ -232,5 +322,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     textAlign: 'center',
+  },
+  plantName: {
+    fontFamily: 'Pacifico',
+    fontSize: 38,
+    fontWeight: '800',
+    marginBottom: 18,
+    marginTop: 18,
+    textAlign: 'center',
+    color: '#2c3e50',
+  },
+  plantDetails: {
+    fontFamily: 'Roboto',
+    fontSize: 21,
+    lineHeight: 30,
+    color: '#34495e',
   },
 });
