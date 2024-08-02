@@ -3,7 +3,9 @@ import { StyleSheet, View, Image, TouchableOpacity, Text, ActivityIndicator, Ani
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
+
 import * as Font from 'expo-font';
+import { Link } from 'expo-router';
 
 export default function App() {
   const [facing, setFacing] = useState('back');
@@ -67,7 +69,10 @@ export default function App() {
     });
     setFontsLoaded(true);
   };
-
+  const addToGarden = () => {
+    console.log('Adding to garden');
+   
+  };
   if (!permission) {
     return <View />;
   }
@@ -189,6 +194,18 @@ export default function App() {
             {plantData.details}
           </Animated.Text>
         </ScrollView>
+        <Link href={{
+          pathname: '/garden',
+          params: { name: plantData.name }
+        }}>
+        <TouchableOpacity 
+        style={styles.addToGardenButton} 
+        onPress={addToGarden}
+      >
+        <Ionicons name="leaf" size={24} color="green" />
+        <Text style={styles.addToGardenText}>Add to Garden</Text>
+      </TouchableOpacity>
+      </Link>
       </Animated.View>
     );
   }
@@ -266,6 +283,31 @@ const styles = StyleSheet.create({
     bottom: 10,
     padding: 10,
   },
+
+  addToGardenButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#4CAF50', // A green color to represent plants/garden
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  addToGardenText: {
+    color: 'white',
+    marginLeft: 10,
+    fontWeight: 'bold',
+  },
   captureButton: {
     width: 70,
     height: 70,
@@ -334,7 +376,7 @@ const styles = StyleSheet.create({
   },
   plantDetails: {
     fontFamily: 'Roboto',
-    fontSize: 21,
+    fontSize: 18,
     lineHeight: 30,
     color: '#34495e',
   },
