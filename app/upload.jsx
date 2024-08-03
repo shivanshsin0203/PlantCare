@@ -6,6 +6,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 import * as Font from 'expo-font';
 import { Link } from 'expo-router';
+import axios from 'axios';
 
 export default function App() {
   const [facing, setFacing] = useState('back');
@@ -70,6 +71,7 @@ export default function App() {
     setFontsLoaded(true);
   };
   const addToGarden = () => {
+    const send=axios.post('http://localhost:3000/plant', { name: plantData.name });
     console.log('Adding to garden');
    
   };
