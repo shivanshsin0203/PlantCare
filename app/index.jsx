@@ -1,26 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, ScrollView, TouchableOpacity, StyleSheet, FlatList} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Feather'; // Make sure to install this package
-import { StatusBar } from 'expo-status-bar'
-const FeaturedSection = ({ title, subtitle, color }) => (
+import Icon from 'react-native-vector-icons/Feather';
+import { StatusBar } from 'expo-status-bar';
+import axios from 'axios';
+
+const FeaturedSection = ({ title, subtitle, color,source }) => (
   <View style={[styles.featuredSection, { backgroundColor: color }]}>
     <Text style={styles.sectionTitle}>{title}</Text>
     <Text style={styles.sectionSubtitle}>{subtitle}</Text>
     <Image 
-      source={require('../assets/images/icon.png')} 
+      source={source} 
       style={styles.featuredImage}
     />
-   
   </View>
 );
 
 const HomePage = () => {
+  const [activeTab, setActiveTab] = useState('All');
+  const [plants, setPlants] = useState([]);
+
+  useEffect(() => {
+    fetchPlants();
+  }, []);
+
+  const fetchPlants = async () => {
+    try {
+      const response = await axios.post('http://localhost:3000/getplant');
+      setPlants(response.data);
+    } catch (error) {
+      console.error('Error fetching plants:', error);
+    }
+  };
+
   const featuredSections = [
-    { title: "Safe plants collection", subtitle: "Explore our beautiful collection of cat friendly plants & designer pots.", color: "#6C63FF" },
-    { title: "Toxic plants guide", subtitle: "Learn about common toxic plants to keep your pets safe.", color: "#FF6C6C" },
-    { title: "Plant care tips", subtitle: "Discover how to care for your indoor plants effectively.", color: "#63FF6C" },
+    { title: "Check which palnt", subtitle: "Explore our beautiful collection of plants just by a pic.", color: "#6C63FF",source:require('../assets/images/one.jpg') },
+    { title: "Add to your Garden", subtitle: "Learn important requirements to grow a plant", color: "#FF6C6C",source:require('../assets/images/two.jpg') },
+    { title: "Health check up", subtitle: "Check heath of your plant in garden and see its cure", color: "#63FF6C",source:require('../assets/images/three.jpg')  },
   ];
+
+  const filteredPlants = plants.filter(plant => {
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Healthy') return plant.health;
+    if (activeTab === 'Unhealthy') return !plant.health;
+    return false;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -47,28 +71,34 @@ const HomePage = () => {
         <View style={styles.scanHistorySection}>
           <Text style={styles.sectionTitle}>Scan history</Text>
           <View style={styles.tabsContainer}>
-            <TouchableOpacity style={styles.activeTab}>
-              <Text>All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tab}>
-              <Text>Safe</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tab}>
-              <Text>Unsafe</Text>
-            </TouchableOpacity>
+            {['All', 'Healthy', 'Unhealthy'].map(tab => (
+              <TouchableOpacity 
+                key={tab}
+                style={tab === activeTab ? styles.activeTab : styles.tab}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text>{tab}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
           
-          <View style={styles.historyItem}>
-            <Image 
-              source={require('../assets/images/icon.png')} 
-              style={styles.historyImage}
-            />
-            <View>
-              <Text style={styles.plantName}>Ficus elastica</Text>
-              <Text style={styles.plantStatus}>🐱 Cat unsafe</Text>
+          {filteredPlants.map((plant, index) => (
+            <View key={index} style={styles.historyItem}>
+              <Image 
+                source={(require('../assets/images/plant2.jpg'))} 
+                style={styles.historyImage}
+              />
+              <View>
+                <Text style={styles.plantName}>{plant.name}</Text>
+                <Text style={[
+                  styles.plantStatus,
+                  { color: plant.health ? 'green' : 'red' }
+                ]}>
+                  {plant.health ? '🌿 Healthy' : '🚫 Unhealthy'}
+                </Text>
+              </View>
             </View>
-          </View>
-         
+          ))}
         </View>
       </ScrollView>
       <StatusBar style="dark" />
@@ -122,25 +152,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 15,
   },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  activeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    marginHorizontal: 5,
-  },
-  inactiveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    marginHorizontal: 5,
-  },
   scanHistorySection: {
     margin: 20,
   },
@@ -175,7 +186,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   plantStatus: {
-    color: '#888',
+    marginTop: 5,
   },
 });
 
