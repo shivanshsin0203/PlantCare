@@ -3,9 +3,11 @@ import { View, Text, Image, TextInput, ScrollView, TouchableOpacity, StyleSheet,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+
 import axios from 'axios';
 
-const FeaturedSection = ({ title, subtitle, color,source }) => (
+const FeaturedSection = ({ title, subtitle, color, source }) => (
   <View style={[styles.featuredSection, { backgroundColor: color }]}>
     <Text style={styles.sectionTitle}>{title}</Text>
     <Text style={styles.sectionSubtitle}>{subtitle}</Text>
@@ -17,6 +19,7 @@ const FeaturedSection = ({ title, subtitle, color,source }) => (
 );
 
 const HomePage = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('All');
   const [plants, setPlants] = useState([]);
 
@@ -26,17 +29,26 @@ const HomePage = () => {
 
   const fetchPlants = async () => {
     try {
-      const response = await axios.post('http://localhost:3000/getplant');
+      const response = await axios.post('https://plantcare-backend.onrender.com/getplant');
       setPlants(response.data);
     } catch (error) {
       console.error('Error fetching plants:', error);
     }
   };
 
+  const navigateToGarden = (name) => {
+    console.log('Navigating to garden');
+    
+    router.push({
+      pathname: '/garden',
+      params: { name: name }
+    });
+  };
+
   const featuredSections = [
-    { title: "Check which palnt", subtitle: "Explore our beautiful collection of plants just by a pic.", color: "#6C63FF",source:require('../assets/images/one.jpg') },
-    { title: "Add to your Garden", subtitle: "Learn important requirements to grow a plant", color: "#FF6C6C",source:require('../assets/images/two.jpg') },
-    { title: "Health check up", subtitle: "Check heath of your plant in garden and see its cure", color: "#63FF6C",source:require('../assets/images/three.jpg')  },
+    { title: "Check which plant", subtitle: "Explore our beautiful collection of plants just by a pic.", color: "#6C63FF", source: require('../assets/images/one.jpg') },
+    { title: "Add to your Garden", subtitle: "Learn important requirements to grow a plant", color: "#FF6C6C", source: require('../assets/images/two.jpg') },
+    { title: "Health check up", subtitle: "Check health of your plant in garden and see its cure", color: "#63FF6C", source: require('../assets/images/three.jpg')  },
   ];
 
   const filteredPlants = plants.filter(plant => {
@@ -83,9 +95,13 @@ const HomePage = () => {
           </View>
           
           {filteredPlants.map((plant, index) => (
-            <View key={index} style={styles.historyItem}>
+            <TouchableOpacity 
+              key={index} 
+              style={styles.historyItem}
+              onPress={() => navigateToGarden(plant.name)}  // Updated this line
+            >
               <Image 
-                source={(require('../assets/images/plant2.jpg'))} 
+                source={require('../assets/images/plant2.jpg')} 
                 style={styles.historyImage}
               />
               <View>
@@ -97,7 +113,7 @@ const HomePage = () => {
                   {plant.health ? '🌿 Healthy' : '🚫 Unhealthy'}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>

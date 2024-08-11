@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator,TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import axios from 'axios';
 
 const Garden = () => {
+  const router = useRouter();
   const route = useRoute();
   const { name } = route.params || { name: 'Guest' };
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [process, setProcess] = useState([]);
-
+  const handleAddToGarden = () => {
+    console.log('Navigating to garden');
+    
+    router.push({
+      pathname: '/health',
+      params: { name:name }
+    });
+  };
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.post('http://localhost:3000/getreq', { name: name });
+        const response = await axios.post('https://plantcare-backend.onrender.com/getreq', { name: name });
         const result = response.data;
         setRequirements(result.requirements);
         setProcess(result.process);
@@ -33,7 +42,7 @@ const Garden = () => {
       console.log('Garden screen unmounted');
     };
   }, [name]);
-
+   
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -64,18 +73,16 @@ const Garden = () => {
           </View>
         ))}
       </View>
-      <Link href={{
-          pathname: '/health',
-          params: { name: name }
-        }}>
+      
         <TouchableOpacity 
         style={styles.addToGardenButton} 
-        
+        onPress={handleAddToGarden}
       >
         <Ionicons name="medkit" size={24} color="white" />
         <Text style={styles.addToGardenText}>Check Health</Text>
       </TouchableOpacity>
-      </Link>
+      
+      <StatusBar style="dark" />
     </ScrollView>
   );
 };
@@ -105,6 +112,7 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginBottom: 20,
     textAlign: 'center',
+    paddingTop:5
   },
   section: {
     backgroundColor: 'white',

@@ -7,6 +7,7 @@ import { useRoute } from '@react-navigation/native';
 import * as Font from 'expo-font';
 import { Link } from 'expo-router';
 import axios from 'axios';
+import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
     const route = useRoute();
@@ -114,10 +115,41 @@ export default function App() {
     ]).start();
 
     if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      setCapturedImage(photo.uri);
+      const options = { quality: 0.7, base64: true };
+      const data = await cameraRef.current.takePictureAsync(options);
+      const source = data.base64;
+      setCapturedImage(data.uri);
       setIsAnalyzing(true);
-      sendToBackend(photo.uri);
+
+      if (source) {
+        let base64Img = `data:image/jpg;base64,${source}`;
+        let apiUrl = 'https://api.cloudinary.com/v1_1/drnq1u9cx/image/upload';
+        let uploadData = {
+          file: base64Img,
+          upload_preset: 'ml_default',
+        };
+
+        fetch(apiUrl, {
+          body: JSON.stringify(uploadData),
+          headers: {
+            'content-type': 'application/json',
+          },
+          method: 'POST',
+        })
+          .then(async response => {
+            let data = await response.json();
+            if (data.secure_url) {
+              const plantData = await axios.post('https://plantcare-backend.onrender.com/health', { imageURL: data.secure_url, name: name });
+              console.log('Plant data:', plantData.data);
+              setPlantData(plantData.data);
+              setIsAnalyzing(false);
+            }
+          })
+          .catch(err => {
+            alert('Cannot upload');
+            setIsAnalyzing(false);
+          });
+      }
     }
   }
 
@@ -130,7 +162,7 @@ export default function App() {
     formData.append('photo', blob, 'photo.jpeg');
     formData.append('name', name);
     try {
-      const response = await fetch('http://localhost:3000/health', {
+      const response = await fetch('https://plantcare-backend.onrender.com/health', {
         method: 'POST',
         body: formData,
       });
@@ -196,7 +228,7 @@ export default function App() {
             {plantData.details}
           </Animated.Text>
         </ScrollView>
-       
+       <StatusBar style='dark' />
       </Animated.View>
     );
   }
